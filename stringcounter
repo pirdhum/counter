@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Number Sequence" />
+<title>Number Sequence iPhone App</title>
+<link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1055/1055646.png" />
+<style>
+  /* Reset some default styling */
+  * {
+    box-sizing: border-box;
+  }
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    -webkit-font-smoothing: antialiased;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    padding: env(safe-area-inset-top, 20px) 20px 20px 20px;
+  }
+  h1 {
+    margin-bottom: 10px;
+    font-weight: 700;
+    font-size: 1.8rem;
+    text-align: center;
+    text-shadow: 1px 1px 5px rgba(0,0,0,0.3);
+  }
+
+  label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 8px;
+    font-size: 1rem;
+    user-select: text;
+  }
+
+  textarea {
+    width: 100%;
+    height: 80px;
+    border-radius: 8px;
+    border: none;
+    padding: 10px;
+    font-size: 1rem;
+    resize: none;
+    font-family: inherit;
+    outline: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    user-select: text;
+  }
+
+  .buttons {
+    margin-top: 15px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  button {
+    flex: 1;
+    background: #ffd700;
+    border: none;
+    border-radius: 10px;
+    color: #333;
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 14px;
+    cursor: pointer;
+    box-shadow: 0 5px 10px rgba(255, 215, 0, 0.6);
+    transition: background-color 0.3s ease, transform 0.1s ease;
+    user-select: none;
+  }
+  button:active {
+    transform: scale(0.97);
+  }
+  button:focus-visible {
+    outline: 3px solid #fff;
+    outline-offset: 2px;
+  }
+
+  .display-area {
+    margin-top: 30px;
+    padding: 25px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    font-size: 3rem;
+    text-align: center;
+    min-height: 80px;
+    user-select: none;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    letter-spacing: 5px;
+  }
+
+  .info-text {
+    margin-top: 15px;
+    font-size: 0.9rem;
+    opacity: 0.85;
+    text-align: center;
+    user-select: none;
+  }
+
+  @media (max-width: 400px) {
+    body {
+      padding: env(safe-area-inset-top, 20px) 15px 20px 15px;
+    }
+    .display-area {
+      font-size: 2.6rem;
+    }
+  }
+</style>
+</head>
+<body>
+  <h1>Number Sequence Tracker</h1>
+  <label for="sequenceInput">Enter your number sequence (comma or space separated):</label>
+  <textarea id="sequenceInput" placeholder="e.g. 3, 5, 7, 11, 13" spellcheck="false" autocorrect="off" autocapitalize="off" inputmode="numeric"></textarea>
+
+  <div class="buttons">
+    <button id="startBtn" aria-label="Start sequence">Start Sequence</button>
+    <button id="nextBtn" aria-label="Show next number" disabled>Next Number</button>
+    <button id="resetBtn" aria-label="Reset sequence" disabled>Reset</button>
+  </div>
+
+  <div class="display-area" aria-live="polite" aria-atomic="true" id="displayArea">Awaiting input...</div>
+  <div class="info-text" id="infoText">Enter a sequence and press Start</div>
+
+<script>
+  (function(){
+    const sequenceInput = document.getElementById('sequenceInput');
+    const startBtn = document.getElementById('startBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const displayArea = document.getElementById('displayArea');
+    const infoText = document.getElementById('infoText');
+
+    let sequence = [];
+    let currentIndex = -1;
+
+    function sanitizeAndParseInput(input) {
+      const parts = input.trim()
+        .replace(/[^0-9,\s.-]/g, '')
+        .split(/[\s,]+/)
+        .filter(s => s.length > 0);
+      const numbers = parts.map(str => Number(str)).filter(num => !isNaN(num));
+      return numbers;
+    }
+
+    function updateDisplay(text) {
+      displayArea.textContent = text;
+    }
+
+    function updateInfo(text) {
+      infoText.textContent = text;
+    }
+
+    startBtn.addEventListener('click', () => {
+      const inputVal = sequenceInput.value;
+      const parsedSequence = sanitizeAndParseInput(inputVal);
+
+      if (parsedSequence.length < 1) {
+        updateInfo('Please enter at least one valid number');
+        updateDisplay('Invalid input');
+        sequence = [];
+        currentIndex = -1;
+        nextBtn.disabled = true;
+        resetBtn.disabled = true;
+        return;
+      }
+      
+      sequence = parsedSequence;
+      currentIndex = -1;
+      updateInfo(\`Sequence started with \${sequence.length} numbers\`);
+      updateDisplay('Press "Next Number" to show first number');
+      nextBtn.disabled = false;
+      resetBtn.disabled = false;
+      startBtn.disabled = true;
+      sequenceInput.disabled = true;
+    });
+
+    nextBtn.addEventListener('click', () => {
+      if (sequence.length === 0) return;
+      currentIndex++;
+      if (currentIndex >= sequence.length) {
+        currentIndex = 0; // Loop back to start
+        updateInfo('Reached end of sequence, looping back to start');
+      } else {
+        updateInfo(\`Showing number \${currentIndex + 1} of \${sequence.length}\`);
+      }
+      updateDisplay(sequence[currentIndex]);
+    });
+
+    resetBtn.addEventListener('click', () => {
+      sequence = [];
+      currentIndex = -1;
+      updateDisplay('Awaiting input...');
+      updateInfo('Enter a sequence and press Start');
+      nextBtn.disabled = true;
+      resetBtn.disabled = true;
+      startBtn.disabled = false;
+      sequenceInput.disabled = false;
+      sequenceInput.value = '';
+      sequenceInput.focus();
+    });
+
+    sequenceInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey && !startBtn.disabled) {
+        e.preventDefault();
+        startBtn.click();
+      }
+    });
+  })();
+</script>
+</body>
+</html>
+
